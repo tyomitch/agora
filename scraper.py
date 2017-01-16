@@ -61,15 +61,15 @@ def parse_unionevents_date(date):
     return date.date()
 
 events = scrape('http://www.unionevents.org/events/',
-    lambda soup: soup('li', class_='three-fourth-block'),  # items
-    lambda item: item.find('div', class_='event-title').a, # sublink
-    lambda sublink: sublink.string.strip(),                # title
-    lambda subpage: '\n'.join(' '.join(p.stripped_strings) # desc
-                              for p in subpage.find('div', class_='two-third-block')('p')),
-    lambda item, subpage:                                  # dates
+    items   = lambda soup: soup('li', class_='three-fourth-block'),
+    sublink = lambda item: item.find('div', class_='event-title').a,
+    title   = lambda sublink: sublink.string.strip(),
+    desc    = lambda subpage: '\n'.join(' '.join(p.stripped_strings)
+                                        for p in subpage.find('div', class_='two-third-block')('p')),
+    dates   = lambda item, subpage:
         (yield parse_unionevents_date(''.join(item.find('div', class_='event-date').stripped_strings)), item),
-    lambda item: item.find('div', class_='event-time').string.strip().split(' - '), # times
-    lambda soup: soup.find('a', class_='next'))            # next
+    times   = lambda item: item.find('div', class_='event-time').string.strip().split(' - '),
+    next    = lambda soup: soup.find('a', class_='next'))
 
 
 # Sophisticated scraping for visitleeds
@@ -107,12 +107,13 @@ def visitleeds_dates(item, subpage):
             yield date, time.string
 
 events += scrape(url,
-    lambda soup: soup('div', class_='thedmsBrowseRow'), # items
-    lambda item: item.h2.a,                             # sublink
-    lambda sublink: sublink.strings.next().strip(),     # title
-    visitleeds_desc, visitleeds_dates,                  # desc, dates
-    lambda time: time.strip().replace(' to ', ' ').split(' ', 2), # times
-    lambda soup: soup.find('a', class_='pagenextbrowsedata12'))   # next
+    items   = lambda soup: soup('div', class_='thedmsBrowseRow'),
+    sublink = lambda item: item.h2.a,
+    title   = lambda sublink: sublink.strings.next().strip(),
+    desc    = visitleeds_desc,
+    dates   = visitleeds_dates,
+    times   = lambda time: time.strip().replace(' to ', ' ').split(' ', 2),
+    next    = lambda soup: soup.find('a', class_='pagenextbrowsedata12'))
 
 
 print yaml.dump(events)
